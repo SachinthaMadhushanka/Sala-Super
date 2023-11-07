@@ -63,6 +63,9 @@ if (isset($_POST['btnsave'])) {
     }
 
   }
+
+  echo '<script type="text/javascript">window.location.href="category.php";</script>';
+  exit;
 }
 
 
@@ -115,6 +118,10 @@ if (isset($_POST['btnupdate'])) {
     }
 
   }
+
+  // Redirect after operation
+  echo '<script type="text/javascript">window.location.href="category.php";</script>';
+  exit;
 }
 
 
@@ -145,6 +152,10 @@ if (isset($_POST['btndelete'])) {
       $_SESSION['status_code'] = "warning";
     }
   }
+
+  // Redirect after operation
+  echo '<script type="text/javascript">window.location.href="category.php";</script>';
+  exit;
 }
 
 
@@ -208,7 +219,7 @@ if (isset($_POST['btndelete'])) {
 
   <input type="hidden" class="form-control" placeholder="Enter Category"  value="' . $row->catid . '" name="txtcatid" >
 
-  <input type="text" class="form-control" placeholder="Enter Category"  value="' . $row->category . '" name="txtcategory" >
+  <input type="text" class="form-control" placeholder="Enter Category"  value="' . $row->category . '" name="txtcategory" id="txtcategory_id" autofocus>
 </div>
 
 
@@ -232,7 +243,7 @@ if (isset($_POST['btndelete'])) {
 
 <div class="form-group">
   <label for="exampleInputEmail1">Category</label>
-  <input type="text" class="form-control" placeholder="Enter Category"  name="txtcategory" >
+  <input type="text" class="form-control" placeholder="Enter Category"  name="txtcategory" id="txtcategory_id" autofocus>
 </div>
 
 
