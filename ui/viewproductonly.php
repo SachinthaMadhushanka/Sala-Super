@@ -48,20 +48,19 @@ include 'barcode/barcode128.php';
 
           <div class="card card-info card-outline">
             <div class="card-header">
-              <h5 class="m-0">View Product Stock</h5>
+              <h5 class="m-0">View Product Details</h5>
             </div>
             <div class="card-body">
 
               <?php
-              $stock_id = $_GET['stock_id'];
+              $product_id = $_GET['product_id'];
 
-              $select = $pdo->prepare("SELECT Product.*, Product_Stock.stock, Product_Stock.purchaseprice, Product_Stock.saleprice, Category.category
+              $select = $pdo->prepare("SELECT Product.*, Category.category
                          FROM Product
                          INNER JOIN Category ON Product.catid = Category.catid
-                         INNER JOIN Product_Stock ON Product.pid = Product_Stock.pid
-                         WHERE Product_Stock.id = :stock_id");
+                         WHERE Product.pid = :product_id");
 
-              $select->bindParam(':stock_id', $stock_id, PDO::PARAM_INT);
+              $select->bindParam(':product_id', $product_id, PDO::PARAM_INT);
               $select->execute();
 
               while ($row = $select->fetch(PDO::FETCH_OBJ)) {
@@ -74,21 +73,17 @@ include 'barcode/barcode128.php';
 
       <center><p class="list-group-item list-group-item-info"><b>PRODUCT DETAILS</b></p></center>
 
-      <li class="list-group-item"><b>Barcode</b> <span class="badge badge-light float-right">' . bar128($row->barcode) . '</span>
+      <li class="list-group-item"><b>Barcode</b>
+        <span class="badge badge-light float-right">' . bar128($row->barcode) . '</span>
       </li>
-      <li class="list-group-item"><b>Product Name</b><span
-          class="badge badge-warning float-right">' . $row->product . '</span></li>
-      <li class="list-group-item"><b>Category</b> <span
-          class="badge badge-success float-right">' . $row->category . '</span></li>
-      <li class="list-group-item"><b>Description </b><span class="badge badge-primary float-right">' . $row->description . '</span>
+      <li class="list-group-item"><b>Product Name</b>
+        <span class="badge badge-warning float-right">' . $row->product . '</span>
       </li>
-      <li class="list-group-item"><b>Stock</b> <span class="badge badge-danger float-right">' . $row->stock . '</span>
+      <li class="list-group-item"><b>Category</b>
+        <span class="badge badge-success float-right">' . $row->category . '</span>
       </li>
-      <li class="list-group-item"><b>Purchase Price </b><span class="badge badge-secondary float-right">' . $row->purchaseprice . '</span>
-      </li>
-      <li class="list-group-item"><b>Sale Price</b> <span
-          class="badge badge-dark float-right">' . $row->saleprice . '</span></li>
-      <li class="list-group-item"><b>Product Profit</b> <span class="badge badge-success float-right">' . ($row->saleprice - $row->purchaseprice) . '</span>
+      <li class="list-group-item"><b>Description </b>
+        <span class="badge badge-primary float-right">' . $row->description . '</span>
       </li>
     </ul>
   </div>

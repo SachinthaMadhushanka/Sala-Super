@@ -157,9 +157,19 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
           <li class="nav-item">
             <a href="addproduct.php" class="nav-link">
+              <i class="nav-icon fas fa-plus-circle"></i>
+              <p>
+                Add Product
+
+              </p>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a href="productlist.php" class="nav-link">
               <i class="nav-icon fas fa-barcode"></i>
               <p>
-                Product
+                Product List
 
               </p>
             </a>
@@ -266,6 +276,16 @@ scratch. This page gets rid of all links and provides the needed markup only.
               <i class="nav-icon fas fa-user-lock"></i>
               <p>
                 Change Password
+
+              </p>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a href="sync.php" class="nav-link">
+              <i class="nav-icon fas fa-sync"></i>
+              <p>
+                Sync
 
               </p>
             </a>

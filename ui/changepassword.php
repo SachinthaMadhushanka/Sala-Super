@@ -4,7 +4,7 @@ include_once '../API/connectdb.php';
 session_start();
 
 
-if ($_SESSION['useremail'] == "") {
+if ($_SESSION['useremail'] == "" or $_SESSION['role'] == "User") {
 
   header('location:../index.php');
 

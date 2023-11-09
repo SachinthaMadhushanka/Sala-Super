@@ -2,7 +2,7 @@
 include_once '../API/connectdb.php';
 session_start();
 
-if ($_SESSION['useremail'] == "" or $_SESSION['role'] == "") {
+if ($_SESSION['useremail'] == "" or $_SESSION['role'] == "User") {
   header('location:../index.php');
 }
 
@@ -42,8 +42,6 @@ if ($_SESSION['role'] == "Admin") {
             <div class="card card-primary card-outline">
               <div class="card-header">
                 <h5 class="m-0" style="font-weight: bold"><?php echo $dateStr; ?></h5>
-                <p style="font-weight: bold">Total Sales: Rs <?php echo number_format($dayTotal, 2); ?></p>
-
               </div>
               <div class="card-body">
                 <table class="table table-striped table-hover ">
@@ -56,23 +54,41 @@ if ($_SESSION['role'] == "Admin") {
                     <td>Due</td>
                     <td>Payment Type</td>
                     <td>Product Count</td>
+                    <td>Profit</td>
                     <td>Action</td>
                   </tr>
                   </thead>
                   <tbody>
                   <?php
+
+                  $dailyProfit = 0;
+
                   // Get the orders for the current date
-                  $select = $pdo->prepare("SELECT invoice.*, COUNT(invoice_details.id) as product_count FROM invoice LEFT JOIN invoice_details ON invoice.invoice_id = invoice_details.invoice_id WHERE DATE(invoice.date_time) = :orderDate GROUP BY invoice.invoice_id ORDER BY invoice.invoice_id ASC");
+                  $select = $pdo->prepare("
+                    SELECT
+                      invoice.*,
+                      COUNT(invoice_details.id) as product_count,
+                      SUM((invoice_details.unit_price - product_stock.purchaseprice) * invoice_details.qty) as profit
+                    FROM invoice
+                    LEFT JOIN invoice_details ON invoice.invoice_id = invoice_details.invoice_id
+                    LEFT JOIN product_stock ON invoice_details.stock_id = product_stock.id
+                    WHERE DATE(invoice.date_time) = :orderDate
+                    GROUP BY invoice.invoice_id
+                    ORDER BY invoice.invoice_id ASC
+                  ");
                   $select->execute([':orderDate' => $dateStr]);
 
                   while ($row = $select->fetch(PDO::FETCH_OBJ)) {
+                    // Add the profit from each invoice to the daily profit
+                    $dailyProfit += $row->profit;
+
                     echo '
-                                        <tr>
-                                            <td>' . $row->invoice_id . '</td>
-                                            <td>' . $row->date_time . '</td>
-                                            <td>' . $row->total . '</td>
-                                            <td>' . $row->paid . '</td>
-                                            <td>' . $row->due . '</td>';
+                      <tr>
+                          <td>' . $row->invoice_id . '</td>
+                          <td>' . $row->date_time . '</td>
+                          <td>' . $row->total . '</td>
+                          <td>' . $row->paid . '</td>
+                          <td>' . $row->due . '</td>';
 
                     if ($row->payment_type == "Cash") {
                       echo '<td><span class="badge badge-warning">' . $row->payment_type . '</span></td>';
@@ -84,6 +100,8 @@ if ($_SESSION['role'] == "Admin") {
 
                     echo '<td>' . $row->product_count . '</td>';
 
+                    echo '<td>' . number_format($row->profit, 2) . '</td>';
+
                     echo '
                     <td>
                         <div class="btn-group">
@@ -93,6 +111,10 @@ if ($_SESSION['role'] == "Admin") {
                     </td>
                     </tr>';
                   }
+                  echo "<p style='font-weight: bold; line-height: 0'>Total Sales: Rs " . number_format($dayTotal, 2) . "</p>";
+
+                  echo "<p style='font-weight: bold'>Profit: Rs " . number_format($dailyProfit, 2) . "</p>";
+
                   ?>
                   </tbody>
                 </table>

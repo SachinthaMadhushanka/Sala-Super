@@ -18,7 +18,7 @@ $query = "
   FROM Product
   INNER JOIN Category ON Product.catid = Category.catid
   LEFT JOIN Product_Stock AS ProductStock ON Product.pid = ProductStock.pid
-  WHERE Product.product LIKE :searchTerm
+  WHERE Product.product LIKE :searchTerm OR category LIKE :searchTerm OR Product.description LIKE :searchTerm
   ORDER BY Product.pid ASC
 ";
 $stmt = $pdo->prepare($query);

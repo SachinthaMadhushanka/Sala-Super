@@ -1,10 +1,8 @@
 <?php
 include_once '../API/connectdb.php';
 session_start();
-if ($_SESSION['useremail'] == "" or $_SESSION['role'] == "User") {
-
+if ($_SESSION['useremail'] == "") {
   header('location:../index.php');
-
 }
 
 
@@ -49,7 +47,7 @@ if ($_SESSION['role'] == "Admin") {
             <div class="card-header d-flex">
               <h5 class="m-0" style="font-weight: bold">Current Stock</h5>
               <input type="text" id="customSearchBox" placeholder="Search Product" class="ml-auto"
-                     style="height: 35px; padding-left: 10px; padding-right: 10px">
+                     style="height: 35px; padding-left: 10px; padding-right: 10px" autofocus>
             </div>
 
             <div class="card-body">
@@ -131,7 +129,10 @@ if ($_SESSION['role'] == "Admin") {
                       echo '<div class="btn-group">';
                       echo '<a href="printbarcode.php?stock_id=' . $item->stock_id . '" class="btn btn-dark btn-xs" role="button"><span class="fa fa-barcode" style="color:#ffffff" data-toggle="tooltip" title="PrintBarcode"></span></a>';
                       echo '<a href="viewproduct.php?stock_id=' . $item->stock_id . '" class="btn btn-warning btn-xs" role="button"><span class="fa fa-eye" style="color:#ffffff" data-toggle="tooltip" title="View Product"></span></a>';
-//                    echo '<a href="editstock.php?stock_id=' . $item->stock_id . '" class="btn btn-success btn-xs" role="button"><span class="fa fa-edit" style="color:#ffffff" data-toggle="tooltip" title="Edit Product"></span></a>';
+
+                      if ($_SESSION['role'] == "Admin") {
+                        echo '<a href="editstock.php?stock_id=' . $item->stock_id . '" class="btn btn-success btn-xs" role="button"><span class="fa fa-edit" style="color:#ffffff" data-toggle="tooltip" title="Edit Product"></span></a>';
+                      }
 //                    echo '<button stock_id="' . $item->stock_id . '" class="btn btn-danger btn-xs btndelete"><span class="fa fa-trash" style="color:#ffffff" data-toggle="tooltip" title="Delete Product"></span></button>';
                       echo '</div>';
                       echo '</td>';
@@ -197,18 +198,30 @@ include_once "footer.php";
         tr.append('<td>' + item.purchaseprice + '</td>');
         tr.append('<td>' + item.saleprice + '</td>');
 
-        let actionButtons = '<div class="btn-group">' +
-          '<a href="printbarcode.php?stock_id=' + item.stock_id + '" class="btn btn-dark btn-xs" role="button">' +
-          '<span class="fa fa-barcode" style="color:#ffffff" data-toggle="tooltip" title="PrintBarcode"></span></a>' +
-          '<a href="viewproduct.php?stock_id=' + item.stock_id + '" class="btn btn-warning btn-xs" role="button">' +
-          '<span class="fa fa-eye" style="color:#ffffff" data-toggle="tooltip" title="View Product"></span></a>' +
-          '<a href="editstock.php?stock_id=' + item.stock_id + '" class="btn btn-success btn-xs" role="button">' +
-          '<span class="fa fa-edit" style="color:#ffffff" data-toggle="tooltip" title="Edit Product"></span></a>' +
-          '<button stock_id="' + item.stock_id + '" class="btn btn-danger btn-xs btndelete">' +
-          '<span class="fa fa-trash" style="color:#ffffff" data-toggle="tooltip" title="Delete Product"></span></button>' +
-          '</div>';
+        let userRole = <?php echo json_encode($_SESSION['role']); ?>;
 
-        tr.append('<td>' + actionButtons + '</td>');
+        if (userRole === "Admin") {
+
+          let actionButtons = '<div class="btn-group">' +
+            '<a href="printbarcode.php?stock_id=' + item.stock_id + '" class="btn btn-dark btn-xs" role="button">' +
+            '<span class="fa fa-barcode" style="color:#ffffff" data-toggle="tooltip" title="PrintBarcode"></span></a>' +
+            '<a href="viewproduct.php?stock_id=' + item.stock_id + '" class="btn btn-warning btn-xs" role="button">' +
+            '<span class="fa fa-eye" style="color:#ffffff" data-toggle="tooltip" title="View Product"></span></a>' +
+            '<a href="editstock.php?stock_id=' + item.stock_id + '" class="btn btn-success btn-xs" role="button">' +
+            '<span class="fa fa-edit" style="color:#ffffff" data-toggle="tooltip" title="Edit Product"></span></a>' +
+            '</div>';
+
+          tr.append('<td>' + actionButtons + '</td>');
+        } else {
+          let actionButtons = '<div class="btn-group">' +
+            '<a href="printbarcode.php?stock_id=' + item.stock_id + '" class="btn btn-dark btn-xs" role="button">' +
+            '<span class="fa fa-barcode" style="color:#ffffff" data-toggle="tooltip" title="PrintBarcode"></span></a>' +
+            '<a href="viewproduct.php?stock_id=' + item.stock_id + '" class="btn btn-warning btn-xs" role="button">' +
+            '<span class="fa fa-eye" style="color:#ffffff" data-toggle="tooltip" title="View Product"></span></a>' +
+            '</div>';
+
+          tr.append('<td>' + actionButtons + '</td>');
+        }
         tbody.append(tr);
       });
     }
@@ -273,8 +286,8 @@ include_once "footer.php";
             '<span class="fa fa-eye" style="color:#ffffff" data-toggle="tooltip" title="View Product"></span></a>' +
             '<a href=' + item.stock_id + '"editstock.php?stock_id=" class="btn btn-success btn-xs" role="button">' +
             '<span class="fa fa-edit" style="color:#ffffff" data-toggle="tooltip" title="Edit Product"></span></a>' +
-            '<button stock_id="' + item.stock_id + '" class="btn btn-danger btn-xs btndelete">' +
-            '<span class="fa fa-trash" style="color:#ffffff" data-toggle="tooltip" title="Delete Product"></span></button>' +
+            // '<button stock_id="' + item.stock_id + '" class="btn btn-danger btn-xs btndelete">' +
+            // '<span class="fa fa-trash" style="color:#ffffff" data-toggle="tooltip" title="Delete Product"></span></button>' +
             '</div>';
 
           tr.append('<td>' + actionButtons + '</td>');

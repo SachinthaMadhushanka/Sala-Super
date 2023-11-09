@@ -1,7 +1,7 @@
 <?php
 include './configs/configs.php';
 
-include_once "API/connectdb.php";
+include_once "./API/connectdb.php";
 session_start();
 
 if (isset($_POST['btn_login'])) {
@@ -104,7 +104,7 @@ if (isset($_POST['btn_login'])) {
   <!-- /.login-logo -->
   <div class="card card-outline card-primary" style="border-top: 3px solid <?php echo primary_color ?>">
     <div class="card-header text-center">
-      <div class="h1" style="color: <?php echo primary_color ?>"><b>SALA</b>SUPER</div>
+      <div class="h1" style="color: <?php echo primary_color ?>"><b>SALAA </b>SUPER</div>
     </div>
     <div class="card-body">
       <p class="login-box-msg">Sign in to start your session</p>

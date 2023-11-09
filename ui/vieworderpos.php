@@ -42,6 +42,10 @@ if (isset($_GET['id'])) {
   $invoice_items_query->execute();
 
   $invoice_items = $invoice_items_query->fetchAll(PDO::FETCH_ASSOC);
+
+//  echo $invoice_details;
+//  echo $invoice_items;
+
 }
 
 
@@ -282,15 +286,15 @@ include_once "footer.php";
   });
 
 
-  function addrow(pid, product, saleprice, stock, barcode, stock_id) {
+  function addrow(pid, product, stock, saleprice, qty, barcode, stock_id) {
     let tr =
       '<tr>' +
       '<input type="hidden" class="form-control barcode" name="barcode_arr[]" id="barcode_id' + stock_id + '" value="' + barcode + '" >' +
       '<td style="text-align:left; vertical-align:middle; font-size:17px;"><span class="badge badge-dark">' + product + '</span><input type="hidden" class="form-control pid" name="pid_arr[]" value="' + pid + '" ><input type="hidden" class="form-control product" name="product_arr[]" value="' + product + '" >  </td>' +
       '<td style="text-align:left; vertical-align:middle; font-size:17px;"><span class="badge badge-primary stocklbl" name="stock_arr[]" id="stock_id' + stock_id + '">' + stock + '</span><input type="hidden" class="form-control stock_id" name="stock_id_arr[]" id="stock_id' + stock_id + '" value="' + stock_id + '"><input type="hidden" class="form-control stock_qty" name="stock_qty_arr[]" id="stock_qty' + stock_id + '" value="' + stock + '"></td>' +
       '<td style="text-align:left; vertical-align:middle; font-size:17px;"><span class="badge badge-warning price" name="price_arr[]" id="price_id' + stock_id + '">' + saleprice + '</span></td>' +
-      '<td><input disabled style="width: 80px" type="number" class="form-control qty" name="quantity_arr[]" id="qty_id' + stock_id + '" value="' + 1 + '" size="1" min="1"></td>' +
-      '<td style="text-align:left; vertical-align:middle; font-size:17px;"><span class="badge badge-success totalamt" name="netamt_arr[]" id="total_raw_price_id' + stock_id + '">' + saleprice + '</span><input type="hidden" class="form-control saleprice" name="saleprice_arr[]" id="saleprice_idd' + stock_id + '" value="' + saleprice + '"></td>' +
+      '<td><input disabled style="width: 80px" type="number" class="form-control qty" name="quantity_arr[]" id="qty_id' + stock_id + '" value="' + qty + '" size="1" min="1"></td>' +
+      '<td style="text-align:left; vertical-align:middle; font-size:17px;"><span class="badge badge-success totalamt" name="netamt_arr[]" id="total_raw_price_id' + stock_id + '">' + saleprice*qty + '</span><input type="hidden" class="form-control saleprice" name="saleprice_arr[]" id="saleprice_idd' + stock_id + '" value="' + saleprice*qty + '"></td>' +
       '</tr>';
 
     $('.details').append(tr);
@@ -300,12 +304,15 @@ include_once "footer.php";
   let invoiceItems = <?php echo json_encode($invoice_items); ?>;
   let invoiceDetails = <?php echo json_encode($invoice_details); ?>;
 
+  console.log(invoiceDetails);
+  console.log(invoiceItems);
+
   for (let item of invoiceItems) {
-    addrow(item.pid, item.product, item.saleprice, item.stock, item.barcode, item.stock_id);
+    console.log(item.qty);
+    addrow(item.pid, item.product, item.stock, item.saleprice, item.qty, item.barcode, item.stock_id);
   }
   <?php endif; ?>
 
-  console.log(invoiceDetails);
   document.getElementById('txtsubtotal').value = invoiceDetails['subtotal']
   document.getElementById('txtdiscount_p').value = (invoiceDetails['discount'] * 100 / invoiceDetails['subtotal']).toFixed(2);
   document.getElementById('txtdiscount').value = invoiceDetails['discount'];

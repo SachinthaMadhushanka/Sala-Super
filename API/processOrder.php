@@ -1,17 +1,13 @@
 <?php
 
-// Database connection details
-$host = "localhost";
-$dbname = "sala_super_db";
-$user = "root";
-$pass = "";
-$pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+require_once 'connectdb.php';
 
-$response = ['success' => false, 'message' => ''];
+$response = ['success' => false, 'message' => '', 'invoice_id' => null];
 
 // Collect POST data
 $postData = $_POST;
+
+
 
 try {
   // Begin transaction
@@ -34,18 +30,21 @@ try {
   $lastInvoiceID = $pdo->lastInsertId();
 
   // Loop through each stock item and insert into invoice_details & update product_stock
-  for ($i = 0; $i < count($postData['stock_ids']); $i++) {
-    $stockID = $postData['stock_ids'][$i];
-    $quantity = $postData['quantities'][$i];
+  foreach ($postData['items'] as $item) {
+    $stockID = $item['stock_id'];
+    $quantity = $item['quantity'];
+    $unit_price = $item['saleprice']; // Ensure that saleprice is provided for each item
 
     // Insert into invoice_details table
-    $detailsSQL = "INSERT INTO invoice_details (invoice_id, stock_id, qty) VALUES (:invoice_id, :stock_id, :qty)";
+    $detailsSQL = "INSERT INTO invoice_details (invoice_id, stock_id, qty, unit_price) VALUES (:invoice_id, :stock_id, :qty, :unit_price)";
     $stmt = $pdo->prepare($detailsSQL);
     $stmt->execute([
       ':invoice_id' => $lastInvoiceID,
       ':stock_id' => $stockID,
-      ':qty' => $quantity
+      ':qty' => $quantity,
+      ':unit_price' => $unit_price // Make sure this column exists in your invoice_details table
     ]);
+
 
     // Update product_stock
     $updateStockSQL = "UPDATE product_stock SET stock = stock - :qty WHERE id = :stock_id";
@@ -63,8 +62,11 @@ try {
 
   $pdo->commit();
 
+  // After successfully inserting the data, set the response
   $response['success'] = true;
   $response['message'] = "Order processed successfully!";
+  $response['invoice_id'] = $lastInvoiceID; // Add the invoice ID to the response
+
 } catch (Exception $e) {
   $pdo->rollBack();
   $response['message'] = "Error processing the order: " . $e->getMessage();

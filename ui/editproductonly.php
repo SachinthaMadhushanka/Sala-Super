@@ -16,7 +16,7 @@ if ($_SESSION['role'] == "Admin") {
 }
 
 
-$stock_id = $_GET['stock_id'];
+$product_id = $_GET['product_id'];
 
 // Prepare a SQL statement to fetch the product details based on the stock ID.
 // The query joins Product, Product_Stock, and Category tables together to gather all necessary details.
@@ -25,18 +25,15 @@ $select = $pdo->prepare("
         Product.pid,
         Product.barcode,
         Product.product,
+        Product.catid,
         Category.category,
-        Product.description,
-        Product_Stock.stock,
-        Product_Stock.purchaseprice,
-        Product_Stock.saleprice
+        Product.description
     FROM Product
-    INNER JOIN Product_Stock ON Product.pid = Product_Stock.pid
     INNER JOIN Category ON Product.catid = Category.catid
-    WHERE Product_Stock.id = :stock_id
+    WHERE Product.pid = :product_id
 ");
 
-$select->bindParam(':stock_id', $stock_id, PDO::PARAM_INT);
+$select->bindParam(':product_id', $product_id, PDO::PARAM_INT);
 $select->execute();
 
 $row = $select->fetch(PDO::FETCH_ASSOC);
@@ -45,53 +42,56 @@ $pid = $row['pid'];
 $barcode_db = $row['barcode'];
 $product_db = $row['product'];
 $category_db = $row['category'];
+$catid_db = $row['catid'];
 $description_db = $row['description'];
-$stock_db = $row['stock'];
-$purchaseprice_db = $row['purchaseprice'];
-$saleprice_db = $row['saleprice'];
-
 
 if (isset($_POST['btneditproduct'])) {
-  $saleprice_txt = $_POST['txtsaleprice'];
-  if ($purchaseprice_db > $saleprice_txt) {
-    // Set session variable to indicate error and prevent DB update
-    $_SESSION['status'] = "Selling Price Cannot be Less Than Purchase Price";
-    $_SESSION['status_code'] = "error";
-  } else {
-    try {
-      // Begin the transaction
-      $pdo->beginTransaction();
+  try {
+    $product = $_POST['txtproductname'];
+    $catid = $_POST['txtproductcategoryselect'];
+    $description = $_POST['txtdescription'];
 
-      // Prepare the update statement
-      $updateStock = $pdo->prepare("UPDATE Product_Stock SET saleprice=:sprice WHERE id=:stock_id");
+    // Begin the transaction
+    $pdo->beginTransaction();
 
-      // Bind the parameters
-      $updateStock->bindParam(':sprice', $saleprice_txt);
-      $updateStock->bindParam(':stock_id', $stock_id);
+    // Check if the product exists and is not the same as the one being updated
+    $query = $pdo->prepare("SELECT * FROM Product WHERE LOWER(product) = LOWER(:product) AND pid != :product_id");
+    $query->bindParam(':product', $product);
+    $query->bindParam(':product_id', $product_id);
+    $query->execute();
 
-      // Execute the update
-      $updateStock->execute();
+    if ($query->rowCount() == 0) { // No matching product found with the same name
+      // Update the product
+      $update = $pdo->prepare("UPDATE Product SET product = :product, catid = :catid, description = :description WHERE pid = :product_id");
+      $update->bindParam(':product', $product);
+      $update->bindParam(':catid', $catid);
+      $update->bindParam(':description', $description);
+      $update->bindParam(':product_id', $product_id);
+      $update->execute();
 
-      // If we reach this point, it means that no exception was thrown
-      // and the update was successful, so we can commit the transaction
+      // Commit the transaction
       $pdo->commit();
-
-      $_SESSION['status'] = "Product Stock Updated Successfully";
+      $_SESSION['status'] = "Product Updated Successfully";
       $_SESSION['status_code'] = "success";
-
-      echo '<script type="text/javascript">window.location.href="editstock.php?stock_id=' . $stock_id . '";</script>';
+      echo '<script type="text/javascript">window.location.href="editproductonly.php?product_id=' . $product_id . '";</script>';
       exit;
-
-    } catch (Exception $e) {
-      // An exception has been thrown
-      // Rollback the transaction to ensure data integrity
+    } else {
+      // A product with the same name already exists
       $pdo->rollBack();
-
-      $_SESSION['status'] = "Product Stock Update Failed";
+      $_SESSION['status'] = "Product name already exists in the database.";
       $_SESSION['status_code'] = "error";
-      echo '<script type="text/javascript">window.location.href="editstock.php?stock_id=' . $stock_id . '";</script>';
+      echo '<script type="text/javascript">window.location.href="editproductonly.php?product_id=' . $product_id . '";</script>';
       exit;
+
     }
+
+  } catch (Exception $e) {
+    $pdo->rollback();
+    $_SESSION['status'] = "Transaction Failed: " . $e->getMessage();
+    $_SESSION['status_code'] = "error";
+    echo '<script type="text/javascript">window.location.href="editproductonly.php?product_id=' . $product_id . '";</script>';
+    exit;
+
   }
 }
 
@@ -128,7 +128,7 @@ if (isset($_POST['btneditproduct'])) {
 
           <div class="card card-success card-outline">
             <div class="card-header">
-              <h5 class="m-0">Edit Stock</h5>
+              <h5 class="m-0">Edit Product</h5>
             </div>
 
             <form action="" method="post" name="formeditproduct" enctype="multipart/form-data">
@@ -145,59 +145,35 @@ if (isset($_POST['btneditproduct'])) {
                     <div class="form-group">
                       <label>Product Name</label>
                       <input type="text" class="form-control" value="<?php echo $product_db; ?>"
-                             placeholder="Enter Name" name="txtproductname" autocomplete="off" disabled>
+                             placeholder="Enter Name" name="txtproductname" autocomplete="off" required>
                     </div>
 
                     <div class="form-group">
                       <label>Category</label>
-                      <input type="text" class="form-control" value="<?php echo $category_db; ?>"
-                             placeholder="Enter Name" name="txtproductname" autocomplete="off" disabled>
+                      <select class="form-control" name="txtproductcategoryselect" required>
+                        <option value="" disabled>Select Category</option>
+                        <?php
+                        $select = $pdo->prepare("SELECT * FROM Category ORDER BY catid DESC");
+                        $select->execute();
+                        while ($row = $select->fetch(PDO::FETCH_ASSOC)) {
+                          $selected = ($catid_db == $row['catid']) ? 'selected' : '';
+                          echo '<option value="' . $row['catid'] . '" ' . $selected . '>' . $row['category'] . '</option>';
+                        }
+                        ?>
+                      </select>
+
                     </div>
 
 
                     <div class="form-group">
                       <label>Description</label>
-                      <textarea class="form-control" placeholder="Enter Description" name="txtdescription" rows="4"
-                                disabled><?php echo $description_db; ?> </textarea>
+                      <textarea class="form-control" placeholder="Enter Description" name="txtdescription"
+                                rows="4"><?php echo $description_db; ?> </textarea>
                     </div>
-
-
                   </div>
-
-
                   <div class="col-md-6">
-
-
-                    <div class="form-group">
-                      <label>Stock Quantity</label>
-                      <input type="number" min="1" step="any" class="form-control" value="<?php echo $stock_db; ?>"
-                             placeholder="Enter Stock" name="txtstock" autocomplete="off" required disabled>
-                    </div>
-
-
-                    <div class="form-group">
-                      <label>Purchase Price</label>
-                      <input type="number" min="1" step="any" class="form-control"
-                             value="<?php echo $purchaseprice_db; ?>" placeholder="Enter Stock"
-                             name="txtpurchaseprice" autocomplete="off" required disabled>
-                    </div>
-
-                    <div class="form-group">
-                      <label>Selling Price</label>
-                      <input type="number" min="1" step="any"
-                             class="form-control"
-                             value="<?php echo $saleprice_db; ?>" placeholder="Enter Selling Price" name="txtsaleprice"
-                             autocomplete="off" required autofocus onfocus="this.select()">
-
-                    </div>
-
-
                   </div>
-
-
                 </div>
-
-
               </div>
 
               <div class="card-footer">

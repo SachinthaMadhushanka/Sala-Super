@@ -15,22 +15,18 @@ if ($_SESSION['useremail'] == "" or $_SESSION['role'] == "User") {
 
 function fill_product($pdo)
 {
-
   $output = '';
   $select = $pdo->prepare("select * from Product order by product asc");
-
   $select->execute();
-
   $result = $select->fetchAll();
 
   foreach ($result as $row) {
     $output .= '<option value="' . $row["pid"] . '">' . $row["product"] . '</option>';
-
   }
 
   return $output;
-
 }
+
 
 if ($_SESSION['role'] == "Admin") {
   include_once 'header.php';
@@ -52,6 +48,15 @@ if (isset($_POST['btnsave'])) {
     $stock = $_POST['txtstock'];
     $purchaseprice = $_POST['txtpurchaseprice'];
     $saleprice = $_POST['txtsaleprice'];
+
+    if ($purchaseprice > $saleprice) {
+      // Set error message and redirect back to form
+      $_SESSION['status'] = "Purchase price cannot be greater than sale price.";
+      $_SESSION['status_code'] = "error";
+//      echo '<script type="text/javascript">window.location.href="addproduct.php";</script>';
+      exit;
+    }
+
 
     // When the barcode is not given
     if (empty($barcode)) {
@@ -237,6 +242,22 @@ if (isset($_POST['btnsave'])) {
     -moz-appearance: textfield;
   }
 
+  /* Error styling for inputs */
+  input.error {
+    border: 2px solid red;
+  }
+
+  /* Specificity for focused inputs with error */
+  input.error:focus {
+    border: 2px solid red;
+    /* Add any additional styling you need for a focused input with an error */
+  }
+
+  /* General active (focused) input styling */
+  input:focus {
+    /* Define active styles, which will be overridden by the error style if both classes are present */
+    border: 2px solid blue;
+  }
 </style>
 
 <!-- Content Wrapper. Contains page content -->
@@ -291,7 +312,7 @@ if (isset($_POST['btnsave'])) {
 
                     <div class="form-group">
                       <label>Search Product (Optional)</label>
-                      <select class="form-control select2" data-dropdown-css-class="select2-purple"
+                      <select class="form-control" data-dropdown-css-class="select2-purple"
                               style="width: 100%;" name="txtproductselect">
                         <option value="-1">New Product</option><?php echo fill_product($pdo); ?>
 
@@ -347,20 +368,22 @@ if (isset($_POST['btnsave'])) {
                     <div class="form-group">
                       <label>Stock Quantity</label>
                       <input type="number" min="1" step="any" class="form-control" placeholder="Enter Stock"
-                             name="txtstock" autocomplete="off" required>
+                             name="txtstock" autocomplete="off" required onblur="stockOnBlur()">
                     </div>
 
 
                     <div class="form-group">
                       <label>Purchase Price</label>
-                      <input type="number" min="1" step="any" class="form-control" placeholder="Enter Stock"
-                             name="txtpurchaseprice" autocomplete="off" required>
+                      <input type="number" min="0" step="any" class="form-control" placeholder="Enter Purchase Price"
+                             name="txtpurchaseprice" autocomplete="off" required oninput="validatePrices()"
+                             onblur="purchasePriceOnBlur()">
                     </div>
 
                     <div class="form-group">
-                      <label>Sale Price</label>
-                      <input type="number" min="1" step="any" class="form-control" placeholder="Enter Stock"
-                             name="txtsaleprice" autocomplete="off" required>
+                      <label>Selling Price</label>
+                      <input type="number" min="1" step="any" class="form-control" placeholder="Enter Selling Price"
+                             name="txtsaleprice" autocomplete="off" required oninput="validatePrices()"
+                             onblur="salePriceOnBlur()">
                     </div>
 
                   </div>
@@ -373,7 +396,7 @@ if (isset($_POST['btnsave'])) {
 
               <div class="card-footer">
                 <div class="text-center">
-                  <button type="submit" class="btn btn-primary" name="btnsave">Save Product</button>
+                  <button type="submit" class="btn btn-primary" name="btnsave" disabled>Save Product</button>
                 </div>
               </div>
 
@@ -466,6 +489,9 @@ if (isset($_SESSION['status']) && $_SESSION['status'] != '') {
 
         $('select[name="txtproductselect"]').on('change', onProductSelectChange);
 
+        $('[name="txtstock"]').focus();
+
+
       }
 
     });
@@ -502,6 +528,9 @@ if (isset($_SESSION['status']) && $_SESSION['status'] != '') {
           $('#txtdescription_id').val('').prop('readonly', false);
 
         }
+
+        $('[name="txtstock"]').focus();
+
       }
     });
   }
@@ -516,4 +545,146 @@ if (isset($_SESSION['status']) && $_SESSION['status'] != '') {
 </script>
 
 
+<!-- Key Mappings-->
+<script>
+  document.addEventListener('DOMContentLoaded', (event) => {
+    // Function to find next input field, skipping disabled fields and the "Search Product" select box
+    function findNextInput(currentInput, reverse = false) {
+      let inputs = Array.from(document.querySelectorAll('input:not([disabled]), select:not([disabled]), textarea:not([disabled])'));
+      let currentIndex = inputs.indexOf(currentInput);
+      let nextIndex = currentIndex;
 
+      do {
+        nextIndex = reverse ? nextIndex - 1 : nextIndex + 1; // Determine next index
+        // Wrap around if out of bounds
+        if (nextIndex >= inputs.length) nextIndex = 0;
+        if (nextIndex < 0) nextIndex = inputs.length - 1;
+      } while (inputs[nextIndex].name === 'txtproductselect') // Skip the "Search Product" select box
+
+      return inputs[nextIndex];
+    }
+
+
+    // Event listener for arrow up/down keys
+    document.addEventListener('keydown', function (e) {
+      if (e.target.tagName.match(/INPUT|SELECT|TEXTAREA/)) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault(); // Prevent default arrow key behavior
+          let nextInput = findNextInput(e.target, e.key === 'ArrowUp');
+          nextInput.focus();
+        }
+      }
+    });
+
+    // Event listener for Enter key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.target.tagName.match(/INPUT|SELECT/)) {
+        e.preventDefault(); // Prevent default Enter key behavior
+        // Find next input, skipping if it's the "Search Product" field
+        let nextInput = findNextInput(e.target);
+        // Move focus to next input
+        nextInput.focus();
+      }
+    });
+
+    // Event listener for Ctrl + Enter key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault(); // Prevent default Ctrl+Enter key behavior
+        document.querySelector('button[name="btnsave"]').click(); // Trigger the save button
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault(); // Prevent default Ctrl+Enter key behavior
+        document.querySelector('button[name="btnsave"]').click();
+      }
+    });
+  });
+</script>
+
+<script type="text/javascript">
+  function validatePrices() {
+    var purchasePrice = document.getElementsByName('txtpurchaseprice')[0].value;
+    var salePrice = document.getElementsByName('txtsaleprice')[0].value;
+
+    var salePriceField = document.getElementsByName('txtsaleprice')[0];
+
+    // Remove error class first
+    salePriceField.classList.remove('error');
+
+    if (parseFloat(purchasePrice) > parseFloat(salePrice)) {
+      // Apply error class
+      salePriceField.classList.add('error');
+    }
+  }
+
+
+  function purchasePriceOnBlur() {
+    if (document.getElementsByName('txtpurchaseprice')[0].value < 0) {
+      document.getElementsByName('txtpurchaseprice')[0].value = 1;
+    }
+  }
+
+  function salePriceOnBlur() {
+    if (document.getElementsByName('txtsaleprice')[0].value <= 0) {
+      document.getElementsByName('txtsaleprice')[0].value = 1;
+    }
+  }
+
+  function stockOnBlur() {
+    if (document.getElementsByName('txtstock')[0].value <= 0) {
+      document.getElementsByName('txtstock')[0].value = 1;
+    }
+  }
+
+</script>
+
+<!-- Disable add product button -->
+<script>
+  document.addEventListener('DOMContentLoaded', (event) => {
+    const btnSave = document.getElementsByName('btnsave')[0];
+    const stockInput = document.getElementsByName('txtstock')[0];
+    const purchasePriceInput = document.getElementsByName('txtpurchaseprice')[0];
+    const sellingPriceInput = document.getElementsByName('txtsaleprice')[0];
+    const productsSelect = document.getElementsByName('txtproductselect')[0];
+
+    function validateInputs() {
+      const stock = parseFloat(stockInput.value);
+      const purchasePrice = parseFloat(purchasePriceInput.value);
+      const sellingPrice = parseFloat(sellingPriceInput.value);
+
+      console.log(stock, purchasePrice, sellingPrice);
+
+      // Check if any of the values are negative or purchase price is greater than selling price
+      if (isNaN(stock) || stock < 0 || isNaN(purchasePrice) || purchasePrice < 0 || isNaN(sellingPrice) || sellingPrice < 0 || purchasePrice > sellingPrice) {
+        btnSave.disabled = true;
+      } else {
+        btnSave.disabled = false;
+      }
+    }
+
+
+    // Add event listeners for when the user types in the input fields
+    stockInput.addEventListener('input', validateInputs);
+    purchasePriceInput.addEventListener('input', validateInputs);
+    sellingPriceInput.addEventListener('input', validateInputs);
+
+
+    $(document).ready(function () {
+      // Initialize select2 if not already initialized (optional)
+      $('select[name="txtproductselect"]').select2();
+
+      // Event when select2 is opened
+      $('select[name="txtproductselect"]').on('select2:open', function (e) {
+        // Focus the search input after the dropdown is opened
+        $('.select2-search__field').focus();
+      });
+
+      // ... your other code ...
+    });
+
+  });
+
+</script>
